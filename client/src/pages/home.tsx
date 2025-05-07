@@ -4,7 +4,7 @@ import ConversationSection from "@/components/conversation-section";
 import InfoCards from "@/components/info-cards";
 import KnowledgeManager from "@/components/knowledge-manager";
 import { useSpeech } from "@/hooks/use-speech";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 
@@ -39,6 +39,9 @@ export default function Home() {
               </Button>
             </DialogTrigger>
             <DialogContent className="w-full max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Quản lý dữ liệu kiến thức</DialogTitle>
+              </DialogHeader>
               <KnowledgeManager />
             </DialogContent>
           </Dialog>

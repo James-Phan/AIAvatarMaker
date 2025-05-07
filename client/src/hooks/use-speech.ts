@@ -141,36 +141,56 @@ export function useSpeech() {
       const lang = localStorage.getItem("speechLanguage") || "vi-VN";
       const rate = parseFloat(localStorage.getItem("speechRate") || "1.0");
       
-      // Create and configure utterance
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
-      utterance.rate = rate;
+      // Break text into sentences for more natural animation
+      const sentences = text.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+      let currentIndex = 0;
       
-      // Try to find a matching voice
-      const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find(voice => voice.lang === lang);
-      if (voice) {
-        utterance.voice = voice;
-      }
-      
-      // Handle speech events
-      utterance.onstart = () => {
-        setIsSpeaking(true);
+      const speakNextSentence = () => {
+        if (currentIndex >= sentences.length) {
+          setIsSpeaking(false);
+          setStatusText("Sẵn sàng lắng nghe...");
+          return;
+        }
+        
+        const currentSentence = sentences[currentIndex] + ".";
+        
+        // Create and configure utterance
+        const utterance = new SpeechSynthesisUtterance(currentSentence);
+        utterance.lang = lang;
+        utterance.rate = rate;
+        
+        // Try to find a matching voice
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(voice => voice.lang === lang);
+        if (voice) {
+          utterance.voice = voice;
+        }
+        
+        // Update status with current sentence for better visual feedback
+        setStatusText(`Đang nói: "${currentSentence.substring(0, 30)}${currentSentence.length > 30 ? '...' : ''}"`);
+        
+        // Handle speech events
+        utterance.onstart = () => {
+          setIsSpeaking(true);
+        };
+        
+        utterance.onend = () => {
+          currentIndex++;
+          speakNextSentence();
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error', event);
+          setIsSpeaking(false);
+          setStatusText("Sẵn sàng lắng nghe...");
+        };
+        
+        // Start speaking
+        window.speechSynthesis.speak(utterance);
       };
       
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        setStatusText("Sẵn sàng lắng nghe...");
-      };
-      
-      utterance.onerror = (event) => {
-        console.error('Speech synthesis error', event);
-        setIsSpeaking(false);
-        setStatusText("Sẵn sàng lắng nghe...");
-      };
-      
-      // Start speaking
-      window.speechSynthesis.speak(utterance);
+      // Start the speaking process
+      speakNextSentence();
     } catch (error) {
       console.error('Error with speech synthesis:', error);
       setIsSpeaking(false);
