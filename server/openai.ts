@@ -1,10 +1,4 @@
-// Dữ liệu nội bộ mẫu
-const internalData = `
-- Công ty ABC thành lập năm 2010, chuyên cung cấp phần mềm quản lý bán hàng.
-- Sản phẩm chính gồm phần mềm POS, CRM, và báo cáo tự động.
-- Chính sách bảo hành: 12 tháng với mọi sản phẩm.
-- Hỗ trợ kỹ thuật 24/7 qua hotline 1900-1234.
-`;
+import { storage } from "./storage";
 
 // Danh sách các câu trả lời mẫu
 const predefinedResponses: Record<string, string> = {
@@ -21,8 +15,33 @@ const predefinedResponses: Record<string, string> = {
 
 export async function generateChatResponse(question: string): Promise<string> {
   try {
+    // Lấy dữ liệu từ cơ sở kiến thức
+    const knowledgeItems = await storage.getAllKnowledgeItems();
+    
+    // Tạo chuỗi dữ liệu từ tất cả các mục trong cơ sở kiến thức
+    const knowledgeData = knowledgeItems.map(item => `- ${item.content}`).join('\n');
+    
     // Chuyển câu hỏi về chữ thường để dễ so sánh
     const lowerQuestion = question.toLowerCase();
+    
+    // Tìm kiếm trong cơ sở kiến thức
+    let foundInKnowledge = false;
+    let bestMatch = "";
+    
+    for (const item of knowledgeItems) {
+      const content = item.content.toLowerCase();
+      if (content.includes(lowerQuestion) || 
+          lowerQuestion.includes(content.substring(0, Math.min(content.length, 10)))) {
+        foundInKnowledge = true;
+        bestMatch = item.content;
+        break;
+      }
+    }
+    
+    // Nếu tìm thấy trong cơ sở kiến thức, ưu tiên trả lời từ đó
+    if (foundInKnowledge && bestMatch) {
+      return `Dựa trên dữ liệu của chúng tôi: ${bestMatch}`;
+    }
     
     // Kiểm tra xem câu hỏi có chứa từ khóa nào trong các chủ đề đã định nghĩa không
     if (lowerQuestion.includes("xin chào") || lowerQuestion.includes("chào") || lowerQuestion.includes("hello") || lowerQuestion.includes("hi")) {
