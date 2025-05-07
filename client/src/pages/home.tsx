@@ -4,7 +4,8 @@ import ConversationSection from "@/components/conversation-section";
 import InfoCards from "@/components/info-cards";
 import KnowledgeManager from "@/components/knowledge-manager";
 import { useSpeech } from "@/hooks/use-speech";
-import { Dialog, DialogContent, DialogTrigger, Button } from "@/components/ui";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 
 export default function Home() {

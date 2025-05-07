@@ -125,7 +125,7 @@ export default function KnowledgeManager() {
           </label>
           <Textarea
             value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewItem(e.target.value)}
             placeholder="Nhập thông tin kiến thức mới tại đây..."
             className="w-full resize-none"
             disabled={isLoading}
