@@ -1,0 +1,177 @@
+Dưới đây là ví dụ prompt và hướng dẫn cơ bản để bạn bắt đầu xây dựng một AI trợ lý ảo avatar trên Replit.com, có khả năng:
+
+- Nhận input bằng giọng nói (voice → text)
+- Xử lý câu hỏi bằng OpenAI GPT-4o, kết hợp dữ liệu riêng (ví dụ: một số thông tin mẫu được nhúng trong prompt)
+- Trả lời bằng giọng nói (text → voice)
+- Giao diện web đơn giản để tương tác
+
+---
+
+# 1. Mô tả dự án trên Replit
+
+- Backend: Node.js + Express (hoặc Fastify)
+- Frontend: HTML + JavaScript (Web Speech API cho voice input/output)
+- Tích hợp OpenAI API (GPT-4o + TTS nếu có)
+- Dữ liệu riêng được nhúng trong prompt (ví dụ một số facts hoặc FAQs mẫu)
+
+---
+
+# 2. Prompt mẫu để gửi cho OpenAI GPT-4o
+
+```plaintext
+Bạn là trợ lý ảo thông minh, thân thiện, giúp trả lời các câu hỏi dựa trên dữ liệu nội bộ sau đây và kiến thức chung trên internet.
+
+Dữ liệu nội bộ:
+- Công ty ABC thành lập năm 2010, chuyên cung cấp phần mềm quản lý bán hàng.
+- Sản phẩm chính gồm phần mềm POS, CRM, và báo cáo tự động.
+- Chính sách bảo hành: 12 tháng với mọi sản phẩm.
+- Hỗ trợ kỹ thuật 24/7 qua hotline 1900-1234.
+
+Khi trả lời, bạn hãy ưu tiên sử dụng dữ liệu nội bộ nếu câu hỏi liên quan, nếu không, hãy trả lời dựa trên kiến thức chung.
+
+Hãy trả lời câu hỏi sau đây của người dùng một cách ngắn gọn, dễ hiểu và lịch sự:
+
+{user_question}
+```
+
+---
+
+# 3. Mã nguồn ví dụ (Node.js + Express + OpenAI API)
+
+Bạn có thể tạo file `index.js` như sau:
+
+```javascript
+import express from "express";
+import cors from "cors";
+import { Configuration, OpenAIApi } from "openai";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+// Dữ liệu nội bộ mẫu
+const internalData = `
+- Công ty ABC thành lập năm 2010, chuyên cung cấp phần mềm quản lý bán hàng.
+- Sản phẩm chính gồm phần mềm POS, CRM, và báo cáo tự động.
+- Chính sách bảo hành: 12 tháng với mọi sản phẩm.
+- Hỗ trợ kỹ thuật 24/7 qua hotline 1900-1234.
+`;
+
+app.post("/chat", async (req, res) => {
+  const { question } = req.body;
+  if (!question) {
+    return res.status(400).json({ error: "Missing question" });
+  }
+
+  const prompt = `
+Bạn là trợ lý ảo thông minh, thân thiện, giúp trả lời các câu hỏi dựa trên dữ liệu nội bộ sau đây và kiến thức chung trên internet.
+
+Dữ liệu nội bộ:
+${internalData}
+
+Khi trả lời, bạn hãy ưu tiên sử dụng dữ liệu nội bộ nếu câu hỏi liên quan, nếu không, hãy trả lời dựa trên kiến thức chung.
+
+Hãy trả lời câu hỏi sau đây của người dùng một cách ngắn gọn, dễ hiểu và lịch sự:
+
+${question}
+  `;
+
+  try {
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4o-mini", // hoặc "gpt-4o" nếu bạn có quyền truy cập
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+    });
+
+    const answer = completion.data.choices[0].message.content;
+    res.json({ answer });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "OpenAI API error" });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+```
+
+---
+
+# 4. Frontend đơn giản (index.html)
+
+```html
+
+
+
+  
+  AI Trợ lý ảo Avatar
+
+
+  AI Trợ lý ảo Avatar
+  Bắt đầu nói
+  
+  
+
+  
+    const startBtn = document.getElementById("start-btn");
+    const userTextEl = document.getElementById("user-text");
+    const botResponseEl = document.getElementById("bot-response");
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "vi-VN";
+
+    recognition.onresult = async (event) => {
+      const userText = event.results[0][0].transcript;
+      userTextEl.textContent = "Bạn nói: " + userText;
+
+      // Gửi câu hỏi lên backend
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: userText }),
+      });
+      const data = await res.json();
+
+      botResponseEl.textContent = "Trợ lý: " + data.answer;
+
+      // Phát âm thanh trả lời
+      const utterance = new SpeechSynthesisUtterance(data.answer);
+      utterance.lang = "vi-VN";
+      speechSynthesis.speak(utterance);
+    };
+
+    startBtn.onclick = () => {
+      recognition.start();
+    };
+  
+
+
+```
+
+---
+
+# 5. Hướng dẫn chạy trên Replit.com
+
+- Tạo project Node.js mới.
+- Thêm file `index.js` với code backend.
+- Thêm file `index.html` trong thư mục `public` hoặc root.
+- Cài đặt package: `npm install express cors openai`
+- Đặt biến môi trường `OPENAI_API_KEY` trong Replit Secrets.
+- Chạy server: `node index.js`
+- Mở webview của Replit, truy cập giao diện web để thử nói chuyện với AI.
+
+---
+
+# 6. Mở rộng
+
+- Thay Web Speech API bằng OpenAI Whisper API để nhận dạng giọng nói chính xác hơn.
+- Thay SpeechSynthesis bằng OpenAI TTS hoặc ElevenLabs API để giọng nói tự nhiên, đa dạng.
+- Thay avatar đơn giản bằng Live2D hoặc Ready Player Me để có hình ảnh động đồng bộ với giọng nói.
+
